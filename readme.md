@@ -1,6 +1,14 @@
 <!-- @format -->
 
-# README: Vite React Frontend with Python Backend (Using TTS)
+# Text-to-Speech UI
+
+<div align="center">
+
+**Daikon Vox is a simple interface for Text-to-Speech generation.**
+
+based on https://github.com/coqui-ai/TTS
+
+</div>
 
 ## Project Overview
 
@@ -84,21 +92,6 @@ Make sure the following tools are installed on your machine:
    npm install
    ```
 
-3. **Set Up the Environment Variables**:
-   Create a `.env` file in the `frontend` directory with the following content:
-
-   ```
-   VITE_BACKEND_URL=http://127.0.0.1:8000
-   ```
-
-4. **Run the Frontend**:
-
-   ```bash
-   npm run dev
-   ```
-
-   The frontend will be available at `http://127.0.0.1:5173`.
-
 ---
 
 ## Running the Application
@@ -106,12 +99,14 @@ Make sure the following tools are installed on your machine:
 1. Start the backend by running:
 
    ```bash
-   uvicorn main:app --reload
+   cd backend
+   python run.py
    ```
 
 2. Start the frontend by running:
 
    ```bash
+   cd frontend
    npm run dev
    ```
 
@@ -122,7 +117,6 @@ Make sure the following tools are installed on your machine:
 ## Notes
 
 - Ensure that both the frontend and backend are running simultaneously for the application to function correctly.
-- Use the `.env` file to adjust configuration parameters as needed.
 
 ---
 
