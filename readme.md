@@ -10,6 +10,8 @@ based on https://github.com/coqui-ai/TTS
 
 </div>
 
+![image](assets/image.png)
+
 ## Project Overview
 
 This project consists of:
