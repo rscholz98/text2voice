@@ -19,20 +19,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Directory to store local models
-models_dir = "./models"
-os.makedirs(models_dir, exist_ok=True)
-
-# Check if CUDA is available
 cuda_available = torch.cuda.is_available()
+current_model = None
+loaded_model_name = None
 
-# TTS Initialization (default model for speech synthesis)
-tts = TTS(model_name="tts_models/multilingual/multi-dataset/xtts_v2")
 
+# Loaded
+# tts_models/multilingual/multi-dataset/xtts_v2
+# tts_models/de/thorsten/tacotron2-DCA 
+# tts_models/de/thorsten/tacotron2-DDC
 
-class ModelResponse(BaseModel):
-    model_name: str
-    locally_available: bool
 
 
 @app.get("/list-models/")
@@ -42,31 +38,42 @@ def list_models():
     """
     all_models = TTS().list_models()
     response = {
-        "models": [
-            {"model_name": model, "locally_available": os.path.exists(os.path.join(models_dir, model))}
-            for model in all_models
-        ],
+        "models": all_models,
         "cuda_available": cuda_available,
     }
     return response
 
 
+@app.post("/load-model/")
+async def load_model(model_name: str = Form(...)):
+    """
+    Load a specific TTS model into memory.
+    """
+    global current_model, loaded_model_name
+    try:
+        current_model = TTS(model_name=model_name, progress_bar=True).to("cuda" if cuda_available else "cpu")
+        loaded_model_name = model_name
+        return JSONResponse(content={"status": "success", "message": f"Model {model_name} loaded successfully."})
+    except Exception as e:
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
+
+
 @app.post("/text-to-speech/")
 async def text_to_speech(text: str = Form(...)):
     """
-    Perform Text-to-Speech synthesis.
+    Generate audio from text using the currently loaded model.
     """
-    if not text.strip():
-        return JSONResponse(content={"error": "Text is empty."}, status_code=400)
+    global current_model
+    if not current_model:
+        return JSONResponse(content={"status": "error", "message": "No model is currently loaded."}, status_code=400)
 
     # Output file paths
     wav_file = "output.wav"
-    mp3_file = "output.mp3"
 
     # Generate TTS audio and save to a WAV file
-    tts.tts_to_file(text=text, file_path=wav_file)
+    current_model.tts_to_file(text=text, file_path=wav_file)
 
-    # Convert WAV to MP3 for better compatibility
+    mp3_file = "output.mp3"
     sound = AudioSegment.from_wav(wav_file)
     sound.export(mp3_file, format="mp3")
 
