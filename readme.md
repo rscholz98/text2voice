@@ -35,18 +35,20 @@ Make sure the following tools are installed on your machine:
 
 ## Setup Instructions
 
-### Backend Setup
+### Setup 
 
 1. **Clone the Repository**:
 
    ```bash
-   git clone <repository_url>
-   cd <repository_directory>/backend
+   git clone https://github.com/rscholz98/text2voice.git
    ```
+
+### Backend Setup 
 
 2. **Set Up a Virtual Environment**:
 
    ```bash
+   cd backend
    python3.9 -m venv venv
    source venv/bin/activate   # On Windows: venv\Scripts\activate
    ```
@@ -70,25 +72,17 @@ Make sure the following tools are installed on your machine:
    - On Windows:
      Download and install `ffmpeg` from [https://ffmpeg.org/].
 
-5. **Run the Backend**:
-
-   ```bash
-   uvicorn main:app --reload
-   ```
-
-   The backend will be available at `http://127.0.0.1:8000`.
-
 ---
 
 ### Frontend Setup
 
-1. **Navigate to the Frontend Directory**:
+5. **Navigate to the Frontend Directory**:
 
    ```bash
    cd ../frontend
    ```
 
-2. **Install Dependencies**:
+6. **Install Dependencies**:
 
    ```bash
    npm install
@@ -98,21 +92,21 @@ Make sure the following tools are installed on your machine:
 
 ## Running the Application
 
-1. Start the backend by running:
+7. Start the backend by running:
 
    ```bash
    cd backend
    python run.py
    ```
 
-2. Start the frontend by running:
+8. Start the frontend by running:
 
    ```bash
    cd frontend
    npm run dev
    ```
 
-3. Open your browser and navigate to `http://127.0.0.1:5173` to use the application.
+9. Open your browser and navigate to `http://127.0.0.1:5173` to use the application. The backend will be available at `http://127.0.0.1:8000`.
 
 ---
 
