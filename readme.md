@@ -8,6 +8,12 @@
 
 based on https://github.com/coqui-ai/TTS
 
+---
+
+[![Project Status: Active The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+![Python](https://img.shields.io/badge/python-3.9-blue.svg)
+![contributors](https://img.shields.io/github/contributors/rscholz98/text2voice)
+
 </div>
 
 ![image](assets/image.png)
