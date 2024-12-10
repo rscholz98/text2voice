@@ -1,23 +1,12 @@
 /** @format */
 
 import React, { useState, useEffect } from "react";
-import {
- Box,
- Button,
- CssBaseline,
- AppBar,
- Toolbar,
- Typography,
- TextField,
- Select,
- MenuItem,
- FormControl,
- InputLabel,
- CircularProgress,
- IconButton,
-} from "@mui/material";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import ErrorIcon from "@mui/icons-material/Error";
+import { Grid, CssBaseline } from "@mui/joy";
+import HeaderSection from "./components/HeaderSection";
+import TextFieldInput from "./components/TextFieldInput";
+import TTSSettings from "./components/TTSSettings";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function App() {
  const [text, setText] = useState("");
@@ -25,22 +14,19 @@ function App() {
  const [models, setModels] = useState([]);
  const [selectedModel, setSelectedModel] = useState("tts_models/de/thorsten/tacotron2-DDC");
  const [cudaAvailable, setCudaAvailable] = useState(false);
- const [loading, setLoading] = useState(true);
  const [modelLoading, setModelLoading] = useState(false);
- const [loadedModel, setLoadedModel] = useState(null);
 
- // Fetch available models on load
  useEffect(() => {
   const fetchModels = async () => {
    try {
     const response = await fetch("http://127.0.0.1:8000/list-models/");
     const data = await response.json();
     setModels(data.models);
+    toast.success("Models fetched successfully");
     setCudaAvailable(data.cuda_available);
    } catch (error) {
     console.error("Error fetching models:", error);
-   } finally {
-    setLoading(false);
+    toast.error("Error fetching models");
    }
   };
   fetchModels();
@@ -57,142 +43,76 @@ function App() {
    });
    const data = await response.json();
    if (response.ok) {
-    setLoadedModel(selectedModel);
     setAudioUrl(null);
+    toast.success("Model loaded successfully");
    } else {
     console.error(data.message);
+    toast.error("Error loading model");
    }
   } catch (error) {
    console.error("Error loading model:", error);
+   toast.error("Error loading model");
   } finally {
    setModelLoading(false);
   }
  };
 
- const handleGenerateAudio = async () => {
+ const handleGenerateAudio = async ({ language, outputFormat }) => {
   const formData = new FormData();
   formData.append("text", text);
+  formData.append("language", language);
+  formData.append("output_format", outputFormat);
 
   try {
    const response = await fetch("http://127.0.0.1:8000/text-to-speech/", {
     method: "POST",
     body: formData,
    });
+
    if (response.ok) {
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
     setAudioUrl(url);
+    toast.success("Audio generated successfully");
    } else {
-    console.error("Error generating audio");
+    toast.error("Error generating audio");
    }
   } catch (error) {
-   console.error("Error in request:", error);
+   console.error("Error generating audio:", error);
+   toast.error("Error generating audio");
   }
  };
 
  return (
-  <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+  <div style={{ height: "100vh", overflow: "hidden" }}>
    <CssBaseline />
-   <AppBar position="static">
-    <Toolbar>
-     <Typography variant="h6" noWrap component="div">
-      Text-to-Speech App
-     </Typography>
-     <Box sx={{ marginLeft: "auto", display: "flex", alignItems: "center" }}>
-      {cudaAvailable ? (
-       <Box display="flex" alignItems="center">
-        <CheckCircleIcon sx={{ marginRight: 1 }} />
-        <Typography>CUDA Available</Typography>
-       </Box>
-      ) : (
-       <Box display="flex" alignItems="center">
-        <ErrorIcon sx={{ marginRight: 1 }} />
-        <Typography>CUDA Not Available</Typography>
-       </Box>
-      )}
-     </Box>
-    </Toolbar>
-   </AppBar>
+   <Grid container sx={{ height: "100%" }}>
+    {/* Header Section */}
+    <Grid item xs={12}>
+     <HeaderSection cudaAvailable={cudaAvailable} />
+    </Grid>
 
-   <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-    {loading ? (
-     <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
-      <CircularProgress />
-     </Box>
-    ) : (
-     <>
-      <Typography variant="h4" gutterBottom>
-       Convert Text to Speech
-      </Typography>
-      <FormControl fullWidth sx={{ marginBottom: 2 }}>
-       <InputLabel>Select Model</InputLabel>
-       <Select
-        value={selectedModel}
-        onChange={(e) => setSelectedModel(e.target.value)}
-        label="Select Model"
-       >
-        {models.map((model) => (
-         <MenuItem value={model} key={model}>
-          {model}
-         </MenuItem>
-        ))}
-       </Select>
-      </FormControl>
+    {/* Main Content Section */}
+    <Grid container spacing={2} sx={{ flexGrow: 1, padding: 2, height: "calc(100% - 64px)" }}>
+     <Grid item xs={9}>
+      <TextFieldInput text={text} setText={setText} onClear={() => setText("")} />
+     </Grid>
 
-      <Box display="flex" justifyContent="left" alignItems="center">
-       <Button
-        variant="contained"
-        color="secondary"
-        onClick={handleLoadModel}
-        disabled={!selectedModel || modelLoading}
-       >
-        {modelLoading ? "Loading Model..." : "Load Model"}
-       </Button>
-       <Typography variant="body2" sx={{ marginLeft: 2 }}>
-        (Loading a new model will take a few minutes to locally cache the model)
-       </Typography>
-      </Box>
-
-      {loadedModel && (
-       <Typography variant="body2" sx={{ marginTop: 2 }}>
-        Currently Loaded Model: <strong>{loadedModel}</strong>
-       </Typography>
-      )}
-
-      <TextField
-       label="Enter Text"
-       variant="outlined"
-       fullWidth
-       multiline
-       rows={4}
-       value={text}
-       onChange={(e) => setText(e.target.value)}
-       sx={{ marginTop: 3 }}
+     <Grid item xs={3} sx={{ height: "100%" }}>
+      <TTSSettings
+       onSubmit={handleGenerateAudio}
+       audioUrl={audioUrl}
+       models={models}
+       selectedModel={selectedModel}
+       setSelectedModel={setSelectedModel}
+       onLoadModel={handleLoadModel}
+       modelLoading={modelLoading}
       />
-      <Button
-       variant="contained"
-       color="primary"
-       onClick={handleGenerateAudio}
-       disabled={!loadedModel || !text.trim()}
-       sx={{ marginTop: 2 }}
-      >
-       Generate Audio
-      </Button>
-      {audioUrl && (
-       <Box mt={3}>
-        <Typography variant="h6">Your Audio:</Typography>
-        <audio controls src={audioUrl} />
-        <Box mt={2}>
-         <Button variant="outlined" component="a" href={audioUrl} download="output.mp3">
-          Download Audio
-         </Button>
-        </Box>
-       </Box>
-      )}
-     </>
-    )}
-   </Box>
-  </Box>
+     </Grid>
+    </Grid>
+   </Grid>
+   <ToastContainer position="bottom-right" autoClose={3000} />
+  </div>
  );
 }
 

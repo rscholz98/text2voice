@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Form
+from fastapi import FastAPI, Form, HTTPException, File, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -6,6 +6,11 @@ from TTS.api import TTS
 from pydub import AudioSegment
 import os
 import torch
+import PyPDF2
+import socket
+
+import http.client
+import sys
 
 # FastAPI application setup
 app = FastAPI()
@@ -19,15 +24,51 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Function to block internet access while allowing localhost
+class LocalhostSocket(socket.socket):
+    def connect(self, address):
+        if address[0] not in ("127.0.0.1", "localhost"):
+            raise RuntimeError("Internet access is disabled for this process.")
+        super().connect(address)
+
+# Override socket to use the restricted version
+socket.socket = LocalhostSocket
+
+def log_unexpected_requests(*args, **kwargs):
+    print("Unexpected network request detected!")
+    sys.exit(1)
+
+http.client.HTTPConnection.request = log_unexpected_requests
+http.client.HTTPSConnection.request = log_unexpected_requests
+
 cuda_available = torch.cuda.is_available()
 current_model = None
 loaded_model_name = None
-
 
 # Loaded
 # tts_models/multilingual/multi-dataset/xtts_v2
 # tts_models/de/thorsten/tacotron2-DCA 
 # tts_models/de/thorsten/tacotron2-DDC
+
+
+@app.post("/read-pdf/")
+async def read_pdf(file: UploadFile = File(...)):
+    """
+    Reads the content of a PDF file and returns the extracted text.
+    """
+    try:
+        # Read the uploaded PDF file
+        pdf_reader = PyPDF2.PdfReader(file.file)
+        extracted_text = ""
+
+        # Extract text from each page
+        for page in pdf_reader.pages:
+            extracted_text += page.extract_text()
+
+        return {"text": extracted_text}
+
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
 
@@ -59,26 +100,38 @@ async def load_model(model_name: str = Form(...)):
 
 
 @app.post("/text-to-speech/")
-async def text_to_speech(text: str = Form(...)):
+async def text_to_speech(
+    text: str = Form(...),
+    language: str = Form("en"),
+    output_format: str = Form("mp3")
+):
     """
     Generate audio from text using the currently loaded model.
     """
     global current_model
+
     if not current_model:
-        return JSONResponse(content={"status": "error", "message": "No model is currently loaded."}, status_code=400)
+        raise HTTPException(status_code=400, detail="No model is currently loaded.")
 
-    # Output file paths
+    # Temporary file paths
     wav_file = "output.wav"
+    output_file = f"output.{output_format}"
 
-    # Generate TTS audio and save to a WAV file
-    current_model.tts_to_file(text=text, file_path=wav_file)
+    try:
+        # Generate TTS audio with the specified language
+        current_model.tts_to_file(text=text, file_path=wav_file)
 
-    mp3_file = "output.mp3"
-    sound = AudioSegment.from_wav(wav_file)
-    sound.export(mp3_file, format="mp3")
+        # Convert to the desired format (e.g., MP3, WAV)
+        sound = AudioSegment.from_wav(wav_file)
+        sound.export(output_file, format=output_format)
 
-    # Clean up the intermediate WAV file
-    os.remove(wav_file)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"TTS generation failed: {str(e)}")
 
-    # Return the MP3 file as a response
-    return FileResponse(mp3_file, media_type="audio/mpeg", filename="output.mp3")
+    finally:
+        # Ensure temporary WAV file is cleaned up
+        if os.path.exists(wav_file):
+            os.remove(wav_file)
+
+    # Return the generated file
+    return FileResponse(output_file, media_type=f"audio/{output_format}", filename=output_file)
