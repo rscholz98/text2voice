@@ -93,12 +93,12 @@ function App() {
     </Grid>
 
     {/* Main Content Section */}
-    <Grid container spacing={2} sx={{ flexGrow: 1, padding: 2, height: "calc(100% - 64px)" }}>
+    <Grid container spacing={3} sx={{ flexGrow: 1, padding: 2, height: "calc(100% - 64px)" }}>
      <Grid item xs={9}>
       <TextFieldInput text={text} setText={setText} onClear={() => setText("")} />
      </Grid>
 
-     <Grid item xs={3} sx={{ height: "100%" }}>
+     <Grid item xs={3}>
       <TTSSettings
        onSubmit={handleGenerateAudio}
        audioUrl={audioUrl}

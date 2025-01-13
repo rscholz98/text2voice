@@ -1,4 +1,10 @@
-fastapi
-uvicorn
-PyPDF2
-tts
+# Python Packages for Endpoints
+fastapi==0.115.6
+uvicorn==0.34.0
+
+# Python Packages for Document Parsing
+PyPDF2==3.0.1
+docling==2.15.1
+
+# Python Packages for Text-to-Speech
+#tts==0.22.0
