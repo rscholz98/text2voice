@@ -3,10 +3,13 @@ from fastapi.responses import JSONResponse
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.chunking import HybridChunker
 import os
 
 # Define artifacts path for model storage
 ARTIFACTS_PATH = "./artifacts"
+
+#StandardPdfPipeline.download_models_hf( local_dir=ARTIFACTS_PATH)
 
 # Configure pipeline options for DocumentConverter
 pipeline_options = PdfPipelineOptions(artifacts_path=ARTIFACTS_PATH)
@@ -17,6 +20,7 @@ doc_converter = DocumentConverter(
 )
 
 router = APIRouter()
+chunker = HybridChunker(tokenizer="BAAI/bge-small-en-v1.5", max_tokens=512)
 
 @router.post("/read-pdf/")
 async def read_pdf(file: UploadFile = File(...)):
@@ -31,14 +35,19 @@ async def read_pdf(file: UploadFile = File(...)):
 
         result = doc_converter.convert(temp_file_path)
 
-        if not result.document:
-            raise HTTPException(status_code=400, detail="The PDF contains no extractable text.")
+        extracted_text = result.document.export_to_markdown()
 
-        extracted_text = result.document.export_to_text()
+        chunk_iter = chunker.chunk(dl_doc=result.document)
+
+        for i, chunk in enumerate(chunk_iter):
+
+            #print(f"chunk.text:\n{repr(f'{chunk}')}")
+
+            enriched_text = chunk.export_to_markdown()
+
+            print(f"chunk.text:\n{repr(f'{enriched_text}')}")
+
         return {"text": extracted_text}
-
-    except Exception as e:
-        return JSONResponse(content={"error": str(e)}, status_code=500)
 
     finally:
         if os.path.exists(temp_file_path):

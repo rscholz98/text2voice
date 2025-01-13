@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydub import AudioSegment
+from docling.chunking import HybridChunker
 import os
 
 router = APIRouter()
