@@ -43,7 +43,7 @@ async def read_pdf(file: UploadFile = File(...)):
 
             #print(f"chunk.text:\n{repr(f'{chunk}')}")
 
-            enriched_text = chunk.export_to_markdown()
+            enriched_text = chunk.document.export_to_markdown()
 
             print(f"chunk.text:\n{repr(f'{enriched_text}')}")
 
